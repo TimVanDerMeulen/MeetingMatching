@@ -45,7 +45,7 @@
 		<h2>Durchläufe</h2> <input type="checkbox" id="showAllRuns">Alle Durchläufe anzeigen</input>
 		<table>
 			<tr id="headers">
-				<th class="idName">Kürzel</td>
+				<th class="idName">Person</td>
 				<th>D1</td>
 				<th class="current">D2</td>
 				<!-- TODO mark data with class to easily remove -->
@@ -156,6 +156,16 @@
 
 <script>
 	<!-- download csv -->
+	
+	function downloadFile(filename, content, fileType){
+		var blob = new Blob([content], {type: fileType});
+		var link = document.createElement("a");
+		link.download = filename;
+		link.innerHTML = "not visible download link";
+		link.href = window.URL.createObjectURL(blob);
+		link.click();
+	}
+	
 	function tableToCsv() {
     var csv = [];
     var rows = document.querySelectorAll("table tr");
@@ -178,7 +188,7 @@
     return csv.join("\n");
 }
 	
-	document.getElementById('downloadCsv').addEventListener('click', e => console.log(tableToCsv()), false);
+	document.getElementById('downloadCsv').addEventListener('click', e => downloadFile("Durchlaeufe.csv", tableToCsv(), 'text/csv;charset=ascii;'), false);
 </script>
 
 <script>
@@ -187,12 +197,7 @@
 	function saveToSelection(){
 		var filename = "data.json";
 		var text = "Text of the file goes here.";
-		var blob = new Blob([text], {type:'text/plain'});
-		var link = document.createElement("a");
-		link.download = filename;
-		link.innerHTML = "Download Matching Data";
-		link.href = window.URL.createObjectURL(blob);
-		link.click();
+		downloadFile(filename, text, 'application/json');
 	}
 	document.getElementById('saveData').addEventListener('click', e => saveToSelection(), false);
 </script>
