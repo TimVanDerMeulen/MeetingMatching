@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Titel</title>
+</head>
+<body>
+<div id="warning">
+	<h1>Dieser Browser unterstützt nicht alle benötigten APIs!</h1>
+	<h2>Bitte verwende einen anderen Browser.</h2>
+</div>
+
+<div id="content">
+	<h1>tolle Überschrift</h1>
+	<div>
+		<h2>Input:</h2>
+		<div>
+		<!-- TODO load into table below -->
+			<input id="oldDataSelect" type="radio" name="oldInputSelect">bestehende Daten: </input><input id="oldData" type="file"/>
+		</div>
+		<div>
+			<input id="allMembersSelect" type="radio" name="oldInputSelect">neue Liste aller potentiellen Teilnehmer: </input><input id="allMembers" type="file"/>
+		</div>
+		<div>
+			aktuelle Teilnehmerliste: <input id="participants" type="file"/>
+		</div>
+	</div>
+
+	<div>
+		<h2>Aktionen:</h2>
+		<div id="actionMenu"  class="grid-container">
+			<button id="calcNextRun" class="grid-item">Nächten Durchlauf Berechnen</button> <label class="grid-item">Berechnen der nächsten Paarung</label>			
+			
+			<button id="downloadCsv">CSV Download</button> <label class="grid-item">Download einer Übersicht zu allen Durchläufen als CSV</label><!-- TODO -->
+			<button id="saveData">Daten Speichern</button> <label class="grid-item">Download der Daten aus der Tabelle unten als Input für spätere Durchläufe</label>
+		</div>
+		<style>
+			.grid-container {
+				display: grid;
+				grid-template-columns: 10em auto; 
+			}
+		</style>
+	</div>
+	
+	<div>
+		<h2>Durchläufe</h2> <input type="checkbox" id="showAllRuns">Alle Durchläufe anzeigen</input>
+		<table>
+			<tr id="headers">
+				<th class="idName">Kürzel</td>
+				<th>D1</td>
+				<th class="current">D2</td>
+				<!-- TODO mark data with class to easily remove -->
+				<!-- TODO mark current run with class -->
+			</tr>
+			<tr>
+				<td class="idName">as</td>
+				<td>bd</td>
+				<td class="current">uv</td>
+			</tr>
+			<tr>
+				<td class="idName">bd</td>
+				<td>as</td>
+				<td class="current">tz</td>
+			</tr>
+		</table>
+		<style>
+			.current {
+				background-color: yellow;
+			}
+			.hidden {
+				display: none;
+			}
+		</style>
+	</div>
+</div>
+
+<script>
+	<!-- initial check for browser requirements -->
+	function removeElement(elementId){
+		var element = document.getElementById(elementId);
+		element.parentNode.removeChild(element);
+	}
+
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
+		removeElement("content");
+	}else{
+		// clear warning
+	    removeElement("warning");
+	}
+</script>
+
+<script>
+	<!-- initial selection -->
+	function getSelection(){
+		return document.querySelector("input[name=oldInputSelect]:checked").parentNode.querySelector("input[type=file]");
+	}
+	
+	// select old data by default if value set, new member list otherwise
+	if(document.getElementById('oldData').files.length > 0) {
+		document.getElementById('oldDataSelect').checked="checked";
+	} else {
+		document.getElementById('allMembersSelect').checked="checked";
+	}
+	
+	document.getElementById('oldData').addEventListener('change', e => document.getElementById('oldDataSelect').click(), false);
+	document.getElementById('allMembers').addEventListener('change', e => document.getElementById('allMembersSelect').click(), false);
+</script>
+
+<script>
+	<!-- loading data -->
+	function readTextFile(file, action)
+	{
+		var reader = new FileReader();
+		reader.onload = (function(theFile) {
+			return function(e) {
+				action(atob(e.target.result.split(',')[1]));
+			}
+		})(file);
+		reader.readAsDataURL(file);
+	}
+	function loadSelection(){
+		var selection = getSelection();
+		var action = content => console.log(content);
+		switch(selection.id){
+			case "oldData":
+				action = content => console.log("old data: " + content);
+				break;
+			case "allMembers":
+				action = content => console.log("new member list: " + content);
+				break;
+		}
+		readTextFile(getSelection().files[0], action);
+	}
+	
+	document.querySelectorAll("input[name=oldInputSelect]").forEach(input => input.addEventListener('change', e => loadSelection(), false));
+	if(getSelection().files.length > 0)
+		loadSelection();
+</script>
+
+<script>
+	function toggleAllColumnsVisible(allVisible){
+		document.querySelectorAll("table tr *").forEach(td => {
+			if(!td.classList.contains('current') && !td.classList.contains('idName'))
+				td.classList.toggle("hidden", !allVisible);
+		});
+	}
+
+	document.getElementById("showAllRuns").addEventListener('change', e => toggleAllColumnsVisible(e.target.checked), false);
+	toggleAllColumnsVisible(document.getElementById("showAllRuns").checked);
+</script>
+
+<script>
+	<!-- calculate next run -->
+	<!-- TODO -->
+</script>
+
+<script>
+	<!-- download csv -->
+	function tableToCsv() {
+    var csv = [];
+    var rows = document.querySelectorAll("table tr");
+    
+	var currentVisibility = document.getElementById("showAllRuns").checked;
+	toggleAllColumnsVisible(true);
+	
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll("td, th");
+        
+        for (var j = 0; j < cols.length; j++) 
+            row.push(cols[j].innerText);
+        
+        csv.push(row.join(","));        
+    }
+	
+	toggleAllColumnsVisible(currentVisibility);
+
+    // Download CSV file
+    return csv.join("\n");
+}
+	
+	document.getElementById('downloadCsv').addEventListener('click', e => console.log(tableToCsv()), false);
+</script>
+
+<script>
+<!-- TODO do smth useful -->
+	<!-- saving data -->
+	function saveToSelection(){
+		var filename = "data.json";
+		var text = "Text of the file goes here.";
+		var blob = new Blob([text], {type:'text/plain'});
+		var link = document.createElement("a");
+		link.download = filename;
+		link.innerHTML = "Download Matching Data";
+		link.href = window.URL.createObjectURL(blob);
+		link.click();
+	}
+	document.getElementById('saveData').addEventListener('click', e => saveToSelection(), false);
+</script>
+
+</body>
+</html> 
