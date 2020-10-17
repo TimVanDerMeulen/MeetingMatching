@@ -14,4 +14,4 @@ Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist ega
  auswählen. (Da muss dann noch die richtige Datei eingefügt werden)
 - aktuelle Teilnehmerliste auswählen und Datei einfügen
 - neuen Durchlauf mit Button unter Aktionen generieren
-- Speichern von Ergebnis CSV und internen Daten für späteren Durchlauf
+- Speichern von Ergebnis CSV und internen Daten für späteren Durchlauf mit Buttons unter Aktionen
