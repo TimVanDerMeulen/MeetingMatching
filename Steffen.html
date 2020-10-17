@@ -166,6 +166,17 @@
 		link.click();
 	}
 	
+	function getListSeparator() {
+		var list = ['a', 'b'], str;
+		if (list.toLocaleString) {
+			str = list.toLocaleString();
+			if (str.indexOf(';') > 0 && str.indexOf(',') == -1) {
+				return ';';
+			}
+		}
+		return ',';
+	}
+	
 	function tableToCsv() {
     var csv = [];
     var rows = document.querySelectorAll("table tr");
@@ -179,7 +190,7 @@
         for (var j = 0; j < cols.length; j++) 
             row.push(cols[j].innerText);
         
-        csv.push(row.join(","));        
+        csv.push(row.join(getListSeparator()));        
     }
 	
 	toggleAllColumnsVisible(currentVisibility);
