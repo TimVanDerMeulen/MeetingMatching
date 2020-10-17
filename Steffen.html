@@ -11,55 +11,45 @@
 
 <div id="content">
 	<h1>tolle Überschrift</h1>
+	
+	<div> 
+		<h2>Konfiguration:</h2>
+		<div class="grid-container">
+			Listentrennzeichen: <input type="text" id="listSeperator" value=";"/>
+			Wort aus Zeilen, die ignoriert werden sollen: <input type="text" id="ignoreLines" value="Fachbereich"/>
+		</div>
+	</div>
+	
 	<div>
 		<h2>Input:</h2>
-		<div>
-		<!-- TODO load into table below -->
-			<input id="oldDataSelect" type="radio" name="oldInputSelect">bestehende Daten: </input><input id="oldData" type="file"/>
-		</div>
-		<div>
-			<input id="allMembersSelect" type="radio" name="oldInputSelect">neue Liste aller potentiellen Teilnehmer: </input><input id="allMembers" type="file"/>
-		</div>
-		<div>
+		<div class="grid-container">
+			bestehende Daten: <input id="oldData" type="file"/>
 			aktuelle Teilnehmerliste: <input id="participants" type="file"/>
 		</div>
 	</div>
 
 	<div>
 		<h2>Aktionen:</h2>
-		<div id="actionMenu"  class="grid-container">
+		<div id="actionMenu" class="grid-container">
 			<button id="calcNextRun" class="grid-item">Nächten Durchlauf Berechnen</button> <label class="grid-item">Berechnen der nächsten Paarung</label>			
 			
-			<button id="downloadCsv">CSV Download</button> <label class="grid-item">Download einer Übersicht zu allen Durchläufen als CSV</label><!-- TODO -->
+			<button id="downloadCsv">CSV Download</button> <label class="grid-item">Download einer Übersicht zu allen Durchläufen als CSV</label>
 			<button id="saveData">Daten Speichern</button> <label class="grid-item">Download der Daten aus der Tabelle unten als Input für spätere Durchläufe</label>
 		</div>
-		<style>
-			.grid-container {
-				display: grid;
-				grid-template-columns: 10em auto; 
-			}
-		</style>
 	</div>
+	
+	<style>
+		.grid-container {
+			display: grid;
+			grid-template-columns: 10em auto; 
+		}
+	</style>
 	
 	<div>
 		<h2>Durchläufe</h2> <input type="checkbox" id="showAllRuns">Alle Durchläufe anzeigen</input>
 		<table>
 			<tr id="headers">
 				<th class="idName">Person</td>
-				<th>D1</td>
-				<th class="current">D2</td>
-				<!-- TODO mark data with class to easily remove -->
-				<!-- TODO mark current run with class -->
-			</tr>
-			<tr>
-				<td class="idName">as</td>
-				<td>bd</td>
-				<td class="current">uv</td>
-			</tr>
-			<tr>
-				<td class="idName">bd</td>
-				<td>as</td>
-				<td class="current">tz</td>
 			</tr>
 		</table>
 		<style>
@@ -90,20 +80,81 @@
 </script>
 
 <script>
+	<!-- data variables -->
+	var participants = [/*id->group*/]; // current participants
+	var previousRuns = [/*id->matches=[idRun1, idRun2, ...]*/]; // data from previous runs
+	var newRuns = [/*[id->match], [...]*/]; // runs generated in this session
+</script>
+
+<script>
 	<!-- initial selection -->
 	function getSelection(){
-		return document.querySelector("input[name=oldInputSelect]:checked").parentNode.querySelector("input[type=file]");
+		var fileSelector = document.getElementById("oldData");
+		return fileSelector.files.length > 0 ? fileSelector.files[0] : null;
 	}
 	
-	// select old data by default if value set, new member list otherwise
-	if(document.getElementById('oldData').files.length > 0) {
-		document.getElementById('oldDataSelect').checked="checked";
-	} else {
-		document.getElementById('allMembersSelect').checked="checked";
+</script>
+
+<script>
+	<!-- table display -->
+
+	function toggleAllColumnsVisible(allVisible){
+		document.querySelectorAll("table tr *").forEach(td => {
+			if(!td.classList.contains('current') && !td.classList.contains('idName'))
+				td.classList.toggle("hidden", !allVisible);
+		});
 	}
 	
-	document.getElementById('oldData').addEventListener('change', e => document.getElementById('oldDataSelect').click(), false);
-	document.getElementById('allMembers').addEventListener('change', e => document.getElementById('allMembersSelect').click(), false);
+	function refreshTable(){
+		// clear existing data
+		document.querySelectorAll("table tr").forEach(tr => {
+			if(tr.id == "headers")
+				return;
+			tr.parentNode.removeChild(tr);
+		});
+		document.querySelectorAll("table tr th").forEach(th => {
+			if(!th.classList.contains('idName'))
+				th.parentNode.removeChild(th);
+		});
+		
+		// fill with currently loaded data
+		var table = document.querySelector("table");
+		Object.keys(participants).forEach(p => {
+			var row = document.createElement("tr");
+			var idName = document.createElement("td");
+			idName.innerText = p;
+			idName.classList.add("idName");
+			row.appendChild(idName);
+			
+			// display saved runs
+			if(previousRuns[p]) {
+				previousRuns[p].forEach(run => {
+					var cell = document.createElement("td");
+					cell.innerText = run;
+					row.appendChild(cell);
+				});
+			}
+			// display newly calculated runs
+			newRuns.forEach(run => {
+				var cell = document.createElement("td");
+				cell.innerText = run[p];
+				cell.classList.add("current");
+				row.appendChild(cell);
+			});
+			
+			table.appendChild(row);
+		});
+		var longestRow = Math.max([...document.querySelectorAll("tr")].map(row => row.childCount));
+		var headers = document.getElementById("headers");
+		for(i=1;i<longestRow;i++){
+			var header = document.createElement("th");
+			header.innerText = "D" + i;
+			headers.appendChild(header);
+		}		
+	}
+
+	document.getElementById("showAllRuns").addEventListener('change', e => toggleAllColumnsVisible(e.target.checked), false);
+	toggleAllColumnsVisible(document.getElementById("showAllRuns").checked);
 </script>
 
 <script>
@@ -118,40 +169,95 @@
 		})(file);
 		reader.readAsDataURL(file);
 	}
-	function loadSelection(){
-		var selection = getSelection();
-		var action = content => console.log(content);
-		switch(selection.id){
-			case "oldData":
-				action = content => console.log("old data: " + content);
-				break;
-			case "allMembers":
-				action = content => console.log("new member list: " + content);
-				break;
-		}
-		readTextFile(getSelection().files[0], action);
-	}
-	
-	document.querySelectorAll("input[name=oldInputSelect]").forEach(input => input.addEventListener('change', e => loadSelection(), false));
-	if(getSelection().files.length > 0)
-		loadSelection();
-</script>
-
-<script>
-	function toggleAllColumnsVisible(allVisible){
-		document.querySelectorAll("table tr *").forEach(td => {
-			if(!td.classList.contains('current') && !td.classList.contains('idName'))
-				td.classList.toggle("hidden", !allVisible);
+	function loadOldData(){
+		readTextFile(getSelection(), content => {
+			previousRuns = content;
+			refreshTable();
 		});
 	}
-
-	document.getElementById("showAllRuns").addEventListener('change', e => toggleAllColumnsVisible(e.target.checked), false);
-	toggleAllColumnsVisible(document.getElementById("showAllRuns").checked);
+	
+	document.getElementById("oldData").addEventListener('change', e => loadOldData(), false);
+	document.getElementById("participants").addEventListener('change', e => {
+		if(e.target.files.length <= 0)
+			return;
+			
+		participants = [];
+		readTextFile(e.target.files[0], content => {
+			content.split("\n").filter(line => line.includes(getListSeparator()) && !line.includes(document.getElementById("ignoreLines").value)).forEach(line => {
+				var vals = line.trim().split(";");
+				participants[vals[0]] = vals[1]; // id -> group
+			});
+			refreshTable();
+		});
+	}, false);
+	
+	// preload if remembered from last time
+	if(getSelection())
+		loadOldData();
 </script>
 
 <script>
 	<!-- calculate next run -->
-	<!-- TODO -->
+	function calcNextRun(){
+		var run = [];
+		var tmpParticipants = Object.keys(participants);
+		var groups = new Set(Object.values(participants));
+		
+		Object.keys(participants).forEach(participant => {
+			if(run[participant])
+				return;
+			if(tmpParticipants.length <= 1) {
+				run[participant]="?";
+				return;
+			}
+			
+			var possibleGroups = [...groups].filter(group => participants[participant] != group); // don't match in same group
+			var match = null;
+			
+			while(match == null && possibleGroups.length > 0){
+				var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
+				possibleGroups.splice(possibleGroups.indexOf(group), 1);
+				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group && !newRuns.find(r => r[participant].includes(p)));
+				for(var member of groupMembers) {
+					if(!participants[participant].includes(member)){
+						match = member;
+						break;
+					}
+				}
+			}
+			
+			if(match == null) {
+				/*console.log(participant);
+				console.log(tmpParticipants);
+				console.log(possibleGroups);
+				console.log(run);*/
+				throw "Failed to match all current participants!";
+			}
+			
+			// set match
+			run[participant] = match;
+			run[match] = participant;
+			
+			// ignore both participants for next matches
+			tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
+			tmpParticipants.splice(tmpParticipants.indexOf(match), 1);
+		});
+		newRuns[newRuns.length] = run;
+		refreshTable();
+	}
+	
+	document.getElementById("calcNextRun").addEventListener('click', e => {
+		var showError = true;
+		for(counter=0;counter<100;counter++){
+			try {
+				calcNextRun();
+				showError = false;
+				break;
+			} catch (error){/*retry*/}
+		}
+		if(showError)
+			alert("Es konnte kein Match für jeden Teilnehmer zugeordnet werden. Starte den Prozess ggf. erneut: Falls das Problem weiterhin besteht könnte es sein, dass eine weitere Zuordnung mit den aktuellen Teilnehmern nicht möglich ist.");
+	}, false);
 </script>
 
 <script>
@@ -167,49 +273,57 @@
 	}
 	
 	function getListSeparator() {
-		var list = ['a', 'b'], str;
-		if (list.toLocaleString) {
-			str = list.toLocaleString();
-			if (str.indexOf(';') > 0 && str.indexOf(',') == -1) {
-				return ';';
-			}
-		}
-		return ',';
+		return document.getElementById("listSeperator").value;
 	}
 	
 	function tableToCsv() {
-    var csv = [];
-    var rows = document.querySelectorAll("table tr");
-    
-	var currentVisibility = document.getElementById("showAllRuns").checked;
-	toggleAllColumnsVisible(true);
-	
-    for (var i = 0; i < rows.length; i++) {
-        var row = [], cols = rows[i].querySelectorAll("td, th");
-        
-        for (var j = 0; j < cols.length; j++) 
-            row.push(cols[j].innerText);
-        
-        csv.push(row.join(getListSeparator()));        
-    }
-	
-	toggleAllColumnsVisible(currentVisibility);
+		var csv = [];
+		var rows = document.querySelectorAll("table tr");
+		
+		var currentVisibility = document.getElementById("showAllRuns").checked;
+		toggleAllColumnsVisible(true);
+		
+		for (var i = 0; i < rows.length; i++) {
+			var row = [], cols = rows[i].querySelectorAll("td, th");
+			
+			for (var j = 0; j < cols.length; j++) 
+				row.push(cols[j].innerText);
+			
+			csv.push(row.join(getListSeparator()));        
+		}
+		
+		toggleAllColumnsVisible(currentVisibility);
 
-    // Download CSV file
-    return csv.join("\n");
-}
+		return csv.join("\n");
+	}
 	
 	document.getElementById('downloadCsv').addEventListener('click', e => downloadFile("Durchlaeufe.csv", tableToCsv(), 'text/csv'), false);
 </script>
 
 <script>
-<!-- TODO do smth useful -->
 	<!-- saving data -->
+	
+	function joinOldAndNew(){
+		newRuns.forEach(run => run.forEach((key, index) => previousRuns[key] += run[key]));
+		newRuns = [];
+		
+		// fill runs for not-participants
+		var longestRun = Math.max(previousRuns.values().map(item => item.length));
+		Object.keys(previousRuns).forEach(key => {
+			while(previousRuns[key].length < longestRun)
+				previousRuns[key] += "-";
+		});
+	}
+	
 	function saveToSelection(){
 		var filename = "data.json";
-		var text = "Text of the file goes here.";
+		
+		joinOldAndNew();
+		var text = "" + previousRuns;
+		
 		downloadFile(filename, text, 'application/json');
 	}
+	
 	document.getElementById('saveData').addEventListener('click', e => saveToSelection(), false);
 </script>
 
