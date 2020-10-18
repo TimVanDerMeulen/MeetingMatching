@@ -144,7 +144,8 @@
 			
 			table.appendChild(row);
 		});
-		var longestRow = Math.max([...document.querySelectorAll("tr")].map(row => row.childCount));
+		var longestRow =  Math.max.apply(null,[...document.querySelectorAll("tr")].map(row => row.childElementCount));
+		console.log(longestRow);
 		var headers = document.getElementById("headers");
 		for(i=1;i<longestRow;i++){
 			var header = document.createElement("th");
@@ -174,7 +175,6 @@
 			var obj = JSON.parse(content);
 			if(obj)
 				previousRuns = obj;
-				console.log(previousRuns);
 			refreshTable();
 		});
 	}
