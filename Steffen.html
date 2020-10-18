@@ -23,8 +23,8 @@
 	<div>
 		<h2>Input:</h2>
 		<div class="grid-container">
-			bestehende Daten: <input id="oldData" type="file"/>
 			aktuelle Teilnehmerliste: <input id="participants" type="file"/>
+			bestehende Daten: <input id="oldData" type="file"/>
 		</div>
 	</div>
 
@@ -82,7 +82,7 @@
 <script>
 	<!-- data variables -->
 	var participants = [/*id->group*/]; // current participants
-	var previousRuns = [/*id->matches=[idRun1, idRun2, ...]*/]; // data from previous runs
+	var previousRuns = {/*id->matches=[idRun1, idRun2, ...]*/}; // data from previous runs
 	var newRuns = [/*[id->match], [...]*/]; // runs generated in this session
 </script>
 
@@ -171,7 +171,10 @@
 	}
 	function loadOldData(){
 		readTextFile(getSelection(), content => {
-			previousRuns = content;
+			var obj = JSON.parse(content);
+			if(obj)
+				previousRuns = obj;
+				console.log(previousRuns);
 			refreshTable();
 		});
 	}
@@ -207,7 +210,8 @@
 			if(run[participant])
 				return;
 			if(tmpParticipants.length <= 1) {
-				run[participant]="?";
+				var sameGroupMembers = Object.keys(participants).filter(p => p != participant && participants[p]==participants[participant]);
+				run[participant]=sameGroupMembers[Math.floor(Math.random() * sameGroupMembers.length)];
 				return;
 			}
 			
@@ -217,7 +221,7 @@
 			while(match == null && possibleGroups.length > 0){
 				var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
 				possibleGroups.splice(possibleGroups.indexOf(group), 1);
-				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group && !newRuns.find(r => r[participant].includes(p)));
+				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group && !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
 				for(var member of groupMembers) {
 					if(!participants[participant].includes(member)){
 						match = member;
@@ -303,24 +307,32 @@
 <script>
 	<!-- saving data -->
 	
-	function joinOldAndNew(){
-		newRuns.forEach(run => run.forEach((key, index) => previousRuns[key] += run[key]));
+	function joinOldAndNew(){	
+		newRuns.forEach(run => {
+			Object.keys(run).forEach(key => {
+				if(previousRuns[key])
+					previousRuns[key] = previousRuns[key].concat([run[key]]);
+				else
+					previousRuns[key] = [run[key]];
+			});
+		});
 		newRuns = [];
 		
 		// fill runs for not-participants
-		var longestRun = Math.max(previousRuns.values().map(item => item.length));
+		var longestRun = Math.max(Object.values(previousRuns).map(item => item.length));
 		Object.keys(previousRuns).forEach(key => {
 			while(previousRuns[key].length < longestRun)
 				previousRuns[key] += "-";
 		});
+
+		return previousRuns;
 	}
 	
 	function saveToSelection(){
-		var filename = "data.json";
+		const d = new Date();
+		var filename = "data-" + d.getFullYear() + "_" + (d.getMonth() + 1) + "_" + d.getDate() + "_" + d.getHours() + d.getMinutes() + ".json";
 		
-		joinOldAndNew();
-		var text = "" + previousRuns;
-		
+		var text = JSON.stringify(joinOldAndNew());
 		downloadFile(filename, text, 'application/json');
 	}
 	
