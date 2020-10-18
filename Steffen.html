@@ -219,6 +219,17 @@
 
 <script>
 	<!-- calculate next run -->
+	function matchFor(participant, tmpParticipants, possibleGroups){
+		var match;
+		while(!match && possibleGroups.length > 0){
+			var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
+			possibleGroups.splice(possibleGroups.indexOf(group), 1);
+			var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group).sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
+			match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
+		}
+		return match;
+	}
+	
 	function calcNextRun(){
 		var run = [];
 		var tmpParticipants = Object.keys(participants);
@@ -235,54 +246,69 @@
 			});
 		}
 		
+		var remainingRetries = document.getElementById("headers").childElementCount;
 		// add new run
-		[...Object.keys(participants)].sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length).forEach(participant => {
-			if(run[participant])
-				return;
-			if(tmpParticipants.length <= 1) {
-				var sameGroupMembers = Object.keys(participants).filter(p => p != participant && participants[p]==participants[participant]);
-				run[participant]=sameGroupMembers[Math.floor(Math.random() * sameGroupMembers.length)];
-				return;
-			}
-			
-			var possibleGroups = [...groups].filter(group => participants[participant] != group); // don't match in same group
-			var match;
-			
-			while(!match && possibleGroups.length > 0){
-				var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
-				possibleGroups.splice(possibleGroups.indexOf(group), 1);
-				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group).sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
-				match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
-			}
-			
-			if(match == null) {
-				/*console.log(participant);
-				console.log(tmpParticipants);
-				console.log(possibleGroups);
-				console.log(run);*/
-				throw "Failed to match all current participants!";
-			}
-			
-			// set match
-			run[participant] = match;
-			run[match] = participant;
-			
-			// ignore both participants for next matches
-			tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
-			tmpParticipants.splice(tmpParticipants.indexOf(match), 1);
-		});
+		while (tmpParticipants.length > 0 && remainingRetries > 0) {
+			remainingRetries--;
+			var sortedParticipants = [...tmpParticipants].sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
+			sortedParticipants.forEach(participant => {
+				if(run[participant] && (run[run[participant]] == participant))
+					return;
+					
+				if(tmpParticipants.length <= 1) {
+					var sameGroupMembers = Object.keys(participants).filter(p => p != participant && participants[p] == participants[participant]);
+					run[participant]=sameGroupMembers[Math.floor(Math.random() * sameGroupMembers.length)];
+					
+					tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
+					return;
+				}
+				
+				var possibleGroups = [...groups].filter(group => participants[participant] != group); // don't match in same group
+				var match = matchFor(participant, tmpParticipants, [...possibleGroups]);
+				
+				if (!match) {
+						match = matchFor(participant, Object.keys(participants), [...possibleGroups]);
+					if(!match) {
+						console.log("retry match was null!")
+						return;
+					}
+					
+					tmpParticipants.push(run[match]);
+					run[match] = null;
+				}
+				
+				// set match
+				run[participant] = match;
+				run[match] = participant;
+				
+				// ignore both participants for next matches
+				tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
+				tmpParticipants.splice(tmpParticipants.indexOf(match), 1);
+			});
+		}
+		
+		if(tmpParticipants.length > 0) {
+			/*console.log(tmpParticipants);
+			console.log(remainingRetries);
+			console.log(run);*/
+			throw "Failed to match all current participants!";
+		}
+		
 		newRuns[newRuns.length] = run;
 		refreshTable();
 	}
 	
 	document.getElementById("calcNextRun").addEventListener('click', e => {
-		var showError = true;
-		for(counter=0;counter < Object.keys(participants).length * 100;counter++){
+		var showError = false;
+		for(i = 0; i < 20; i++) {
 			try {
 				calcNextRun();
 				showError = false;
 				break;
-			} catch (error){/*retry*/}
+			} catch (error){
+				showError = true;
+				console.log(error);
+			}
 		}
 		if(showError)
 			alert("Es konnte kein Match für jeden Teilnehmer zugeordnet werden. Starte den Prozess ggf. erneut: Falls das Problem weiterhin besteht könnte es sein, dass eine weitere Zuordnung mit den aktuellen Teilnehmern nicht möglich ist.");
