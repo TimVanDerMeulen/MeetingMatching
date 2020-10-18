@@ -118,6 +118,7 @@
 		});
 		
 		// fill with currently loaded data
+		var hideOld = !document.getElementById("showAllRuns").checked;
 		var table = document.querySelector("table");
 		Object.keys(participants).forEach(p => {
 			var row = document.createElement("tr");
@@ -131,6 +132,8 @@
 				previousRuns[p].forEach(run => {
 					var cell = document.createElement("td");
 					cell.innerText = run;
+					if(hideOld)
+						cell.classList.add("hidden");
 					row.appendChild(cell);
 				});
 			}
@@ -144,14 +147,25 @@
 			
 			table.appendChild(row);
 		});
-		var longestRow =  Math.max.apply(null,[...document.querySelectorAll("tr")].map(row => row.childElementCount));
-		console.log(longestRow);
-		var headers = document.getElementById("headers");
-		for(i=1;i<longestRow;i++){
+		
+		function createHeader(current){
 			var header = document.createElement("th");
-			header.innerText = "D" + i;
+			header.innerText = "D" + (document.getElementById("headers").childElementCount);
+			if(current)
+				header.classList.add("current");
+			if(!current && hideOld)
+				header.classList.add("hidden");
+			console.log(header);
 			headers.appendChild(header);
-		}		
+		}
+		var longestRow =  Math.max.apply(null,[...document.querySelectorAll("tr")].map(row => row.childElementCount));
+		var amountCurrent = newRuns.length;
+		console.log(amountCurrent);
+		for(i=1;i < longestRow - amountCurrent;i++)
+			createHeader(false);
+		
+		for(i=1;i <= amountCurrent;i++)
+			createHeader(true);		
 	}
 
 	document.getElementById("showAllRuns").addEventListener('change', e => toggleAllColumnsVisible(e.target.checked), false);
@@ -252,7 +266,7 @@
 	
 	document.getElementById("calcNextRun").addEventListener('click', e => {
 		var showError = true;
-		for(counter=0;counter<100;counter++){
+		for(counter=0;counter<10000;counter++){
 			try {
 				calcNextRun();
 				showError = false;
