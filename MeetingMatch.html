@@ -226,7 +226,7 @@
 			var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
 			possibleGroups.splice(possibleGroups.indexOf(group), 1);
 			var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group).sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
-			match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
+			match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant] && r[participant].includes(p))));
 		}
 		return match;
 	}
