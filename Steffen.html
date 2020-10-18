@@ -202,6 +202,12 @@
 				var vals = line.trim().split(";");
 				participants[vals[0]] = vals[1]; // id -> group
 			});
+			
+			if(Object.keys(participants).length < 2) {
+				alert("Die Teilnehmerliste konnte nicht geladen werden. Möglicherweise wurde kein CSV-Format verwendet oder das Listentrennzeichen ist nicht korrekt?!");
+				throw "Unable to load participants";
+			}
+			
 			refreshTable();
 		});
 	}, false);
