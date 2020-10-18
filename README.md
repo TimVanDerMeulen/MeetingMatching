@@ -15,3 +15,6 @@ Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist ega
 - aktuelle Teilnehmerliste auswählen und Datei einfügen
 - neuen Durchlauf mit Button unter Aktionen generieren
 - Speichern von Ergebnis CSV und internen Daten für späteren Durchlauf mit Buttons unter Aktionen
+
+## Wie bekomme ich die bestehenden Daten weg? / Wie fange ich neu an?
+Mit STRG + F5 werden alle default geladenen Daten verworfen und müssen erneut per Datei-Selektor / -Upload ausgewählt werden
