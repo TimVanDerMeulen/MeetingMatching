@@ -224,7 +224,19 @@
 		var tmpParticipants = Object.keys(participants);
 		var groups = new Set(Object.values(participants));
 		
-		Object.keys(participants).forEach(participant => {
+		// fill missed runs
+		if(Object.keys(newRuns).length < 1) {
+			var longestPrev = Math.max.apply(null, [...Object.keys(previousRuns)].map(key => previousRuns[key].length));
+			Object.keys(participants).forEach(p => {
+				if(!previousRuns[p])
+					previousRuns[p] = [];
+				while(Object.keys(previousRuns[p]).length < longestPrev)
+					previousRuns[p] = previousRuns[p].concat(["-"]);
+			});
+		}
+		
+		// add new run
+		[...Object.keys(participants)].sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length).forEach(participant => {
 			if(run[participant])
 				return;
 			if(tmpParticipants.length <= 1) {
@@ -234,18 +246,13 @@
 			}
 			
 			var possibleGroups = [...groups].filter(group => participants[participant] != group); // don't match in same group
-			var match = null;
+			var match;
 			
-			while(match == null && possibleGroups.length > 0){
+			while(!match && possibleGroups.length > 0){
 				var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
 				possibleGroups.splice(possibleGroups.indexOf(group), 1);
-				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group && !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
-				for(var member of groupMembers) {
-					if(!participants[participant].includes(member)){
-						match = member;
-						break;
-					}
-				}
+				var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group).sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
+				match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
 			}
 			
 			if(match == null) {
@@ -270,7 +277,7 @@
 	
 	document.getElementById("calcNextRun").addEventListener('click', e => {
 		var showError = true;
-		for(counter=0;counter<10000;counter++){
+		for(counter=0;counter < Object.keys(participants).length * 100;counter++){
 			try {
 				calcNextRun();
 				showError = false;
@@ -337,10 +344,10 @@
 		newRuns = [];
 		
 		// fill runs for not-participants
-		var longestRun = Math.max(Object.values(previousRuns).map(item => item.length));
+		var longestRun = Math.max.apply(null, [...Object.values(previousRuns).map(item => item.length)]);
 		Object.keys(previousRuns).forEach(key => {
 			while(previousRuns[key].length < longestRun)
-				previousRuns[key] += "-";
+				previousRuns[key] = previousRuns[key].concat("-");
 		});
 
 		return previousRuns;
