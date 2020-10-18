@@ -155,12 +155,10 @@
 				header.classList.add("current");
 			if(!current && hideOld)
 				header.classList.add("hidden");
-			console.log(header);
 			headers.appendChild(header);
 		}
 		var longestRow =  Math.max.apply(null,[...document.querySelectorAll("tr")].map(row => row.childElementCount));
 		var amountCurrent = newRuns.length;
-		console.log(amountCurrent);
 		for(i=1;i < longestRow - amountCurrent;i++)
 			createHeader(false);
 		
