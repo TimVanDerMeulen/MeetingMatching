@@ -140,7 +140,7 @@
 			// display newly calculated runs
 			newRuns.forEach(run => {
 				var cell = document.createElement("td");
-				cell.innerText = run[p];
+				cell.innerText = run[p] ? run[p] : "-";
 				cell.classList.add("current");
 				row.appendChild(cell);
 			});
@@ -200,7 +200,8 @@
 		readTextFile(e.target.files[0], content => {
 			content.split("\n").filter(line => line.includes(getListSeparator()) && !line.includes(document.getElementById("ignoreLines").value)).forEach(line => {
 				var vals = line.trim().split(";");
-				participants[vals[0]] = vals[1]; // id -> group
+				if(vals[0])
+					participants[vals[0]] = vals[1]; // id -> group
 			});
 			
 			if(Object.keys(participants).length < 2) {
@@ -246,6 +247,8 @@
 			});
 		}
 		
+		var trippleRun;
+		
 		var remainingRetries = document.getElementById("headers").childElementCount;
 		// add new run
 		while (tmpParticipants.length > 0 && remainingRetries > 0) {
@@ -256,8 +259,13 @@
 					return;
 					
 				if(tmpParticipants.length <= 1) {
-					var sameGroupMembers = Object.keys(participants).filter(p => p != participant && participants[p] == participants[participant]);
+					var sameGroupMembers = Object.keys(participants).filter(p => participants[p] != participants[participant]);
 					run[participant]=sameGroupMembers[Math.floor(Math.random() * sameGroupMembers.length)];
+					
+					trippleRun = [];
+					trippleRun[participant] = run[run[participant]];
+					trippleRun[run[participant]] = participant;
+					trippleRun[run[run[participant]]] = participant;
 					
 					tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
 					return;
@@ -295,6 +303,8 @@
 		}
 		
 		newRuns[newRuns.length] = run;
+		if(trippleRun)
+			newRuns[newRuns.length] = trippleRun;
 		refreshTable();
 	}
 	
@@ -361,10 +371,11 @@
 	function joinOldAndNew(){	
 		newRuns.forEach(run => {
 			Object.keys(run).forEach(key => {
+				var newVal = run[key] ? run[key] : "-";
 				if(previousRuns[key])
-					previousRuns[key] = previousRuns[key].concat([run[key]]);
+					previousRuns[key] = previousRuns[key].concat([newVal]);
 				else
-					previousRuns[key] = [run[key]];
+					previousRuns[key] = [newVal];
 			});
 		});
 		newRuns = [];
