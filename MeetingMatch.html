@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Titel</title>
+</head>
+<body>
+<div id="warning">
+	<h1>Dieser Browser unterstützt nicht alle benötigten APIs!</h1>
+	<h2>Bitte verwende einen anderen Browser.</h2>
+</div>
+
+<div id="content">
+	<h1>tolle Überschrift</h1>
+	
+	<div> 
+		<h2>Konfiguration:</h2>
+		<div class="grid-container">
+			Listentrennzeichen: <input type="text" id="listSeperator" value=";"/>
+			Wort aus Zeilen, die ignoriert werden sollen: <input type="text" id="ignoreLines" value="Fachbereich"/>
+		</div>
+	</div>
+	
+	<div>
+		<h2>Input:</h2>
+		<div class="grid-container">
+			aktuelle Teilnehmerliste: <input id="participants" type="file"/>
+			bestehende Daten: <input id="oldData" type="file"/>
+		</div>
+	</div>
+
+	<div>
+		<h2>Aktionen:</h2>
+		<div id="actionMenu" class="grid-container">
+			<button id="calcNextRun" class="grid-item">Nächten Durchlauf Berechnen</button> <label class="grid-item">Berechnen der nächsten Paarung</label>			
+			
+			<button id="downloadCsv">CSV Download</button> <label class="grid-item">Download einer Übersicht zu allen Durchläufen als CSV</label>
+			<button id="saveData">Daten Speichern</button> <label class="grid-item">Download der Daten aus der Tabelle unten als Input für spätere Durchläufe</label>
+		</div>
+	</div>
+	
+	<style>
+		.grid-container {
+			display: grid;
+			grid-template-columns: 10em auto; 
+		}
+	</style>
+	
+	<div>
+		<h2>Durchläufe</h2> <input type="checkbox" id="showAllRuns">Alle Durchläufe anzeigen</input>
+		<table>
+			<tr id="headers">
+				<th class="idName">Person</td>
+			</tr>
+		</table>
+		<style>
+			.current {
+				background-color: yellow;
+			}
+			.hidden {
+				display: none;
+			}
+		</style>
+	</div>
+</div>
+
+<script>
+	<!-- initial check for browser requirements -->
+	function removeElement(elementId){
+		var element = document.getElementById(elementId);
+		element.parentNode.removeChild(element);
+	}
+
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
+		removeElement("content");
+	}else{
+		// clear warning
+	    removeElement("warning");
+	}
+</script>
+
+<script>
+	<!-- data variables -->
+	var participants = [/*id->group*/]; // current participants
+	var previousRuns = {/*id->matches=[idRun1, idRun2, ...]*/}; // data from previous runs
+	var newRuns = [/*[id->match], [...]*/]; // runs generated in this session
+</script>
+
+<script>
+	<!-- initial selection -->
+	function getSelection(){
+		var fileSelector = document.getElementById("oldData");
+		return fileSelector.files.length > 0 ? fileSelector.files[0] : null;
+	}
+	
+</script>
+
+<script>
+	<!-- table display -->
+
+	function toggleAllColumnsVisible(allVisible){
+		document.querySelectorAll("table tr *").forEach(td => {
+			if(!td.classList.contains('current') && !td.classList.contains('idName'))
+				td.classList.toggle("hidden", !allVisible);
+		});
+	}
+	
+	function refreshTable(){
+		// clear existing data
+		document.querySelectorAll("table tr").forEach(tr => {
+			if(tr.id == "headers")
+				return;
+			tr.parentNode.removeChild(tr);
+		});
+		document.querySelectorAll("table tr th").forEach(th => {
+			if(!th.classList.contains('idName'))
+				th.parentNode.removeChild(th);
+		});
+		
+		// fill with currently loaded data
+		var hideOld = !document.getElementById("showAllRuns").checked;
+		var table = document.querySelector("table");
+		Object.keys(participants).forEach(p => {
+			var row = document.createElement("tr");
+			var idName = document.createElement("td");
+			idName.innerText = p;
+			idName.classList.add("idName");
+			row.appendChild(idName);
+			
+			// display saved runs
+			if(previousRuns[p]) {
+				previousRuns[p].forEach(run => {
+					var cell = document.createElement("td");
+					cell.innerText = run;
+					if(hideOld)
+						cell.classList.add("hidden");
+					row.appendChild(cell);
+				});
+			}
+			// display newly calculated runs
+			newRuns.forEach(run => {
+				var cell = document.createElement("td");
+				cell.innerText = run[p];
+				cell.classList.add("current");
+				row.appendChild(cell);
+			});
+			
+			table.appendChild(row);
+		});
+		
+		function createHeader(current){
+			var header = document.createElement("th");
+			header.innerText = "D" + (document.getElementById("headers").childElementCount);
+			if(current)
+				header.classList.add("current");
+			if(!current && hideOld)
+				header.classList.add("hidden");
+			headers.appendChild(header);
+		}
+		var longestRow =  Math.max.apply(null,[...document.querySelectorAll("tr")].map(row => row.childElementCount));
+		var amountCurrent = newRuns.length;
+		for(i=1;i < longestRow - amountCurrent;i++)
+			createHeader(false);
+		
+		for(i=1;i <= amountCurrent;i++)
+			createHeader(true);		
+	}
+
+	document.getElementById("showAllRuns").addEventListener('change', e => toggleAllColumnsVisible(e.target.checked), false);
+	toggleAllColumnsVisible(document.getElementById("showAllRuns").checked);
+</script>
+
+<script>
+	<!-- loading data -->
+	function readTextFile(file, action)
+	{
+		var reader = new FileReader();
+		reader.onload = (function(theFile) {
+			return function(e) {
+				action(atob(e.target.result.split(',')[1]));
+			}
+		})(file);
+		reader.readAsDataURL(file);
+	}
+	function loadOldData(){
+		readTextFile(getSelection(), content => {
+			var obj = JSON.parse(content);
+			if(obj)
+				previousRuns = obj;
+			refreshTable();
+		});
+	}
+	
+	document.getElementById("oldData").addEventListener('change', e => loadOldData(), false);
+	document.getElementById("participants").addEventListener('change', e => {
+		if(e.target.files.length <= 0)
+			return;
+			
+		participants = [];
+		readTextFile(e.target.files[0], content => {
+			content.split("\n").filter(line => line.includes(getListSeparator()) && !line.includes(document.getElementById("ignoreLines").value)).forEach(line => {
+				var vals = line.trim().split(";");
+				participants[vals[0]] = vals[1]; // id -> group
+			});
+			
+			if(Object.keys(participants).length < 2) {
+				alert("Die Teilnehmerliste konnte nicht geladen werden. Möglicherweise wurde kein CSV-Format verwendet oder das Listentrennzeichen ist nicht korrekt?!");
+				throw "Unable to load participants";
+			}
+			
+			refreshTable();
+		});
+	}, false);
+	
+	// preload if remembered from last time
+	if(getSelection())
+		loadOldData();
+</script>
+
+<script>
+	<!-- calculate next run -->
+	function matchFor(participant, tmpParticipants, possibleGroups){
+		var match;
+		while(!match && possibleGroups.length > 0){
+			var group = possibleGroups[Math.floor(Math.random() * possibleGroups.length)];
+			possibleGroups.splice(possibleGroups.indexOf(group), 1);
+			var groupMembers = Object.keys(participants).filter(p => tmpParticipants.includes(p) && participants[p] == group).sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
+			match = groupMembers.find(p => !previousRuns[participant] || !(previousRuns[participant].includes(p) || newRuns.find(r => r[participant].includes(p))));
+		}
+		return match;
+	}
+	
+	function calcNextRun(){
+		var run = [];
+		var tmpParticipants = Object.keys(participants);
+		var groups = new Set(Object.values(participants));
+		
+		// fill missed runs
+		if(Object.keys(newRuns).length < 1) {
+			var longestPrev = Math.max.apply(null, [...Object.keys(previousRuns)].map(key => previousRuns[key].length));
+			Object.keys(participants).forEach(p => {
+				if(!previousRuns[p])
+					previousRuns[p] = [];
+				while(Object.keys(previousRuns[p]).length < longestPrev)
+					previousRuns[p] = previousRuns[p].concat(["-"]);
+			});
+		}
+		
+		var remainingRetries = document.getElementById("headers").childElementCount;
+		// add new run
+		while (tmpParticipants.length > 0 && remainingRetries > 0) {
+			remainingRetries--;
+			var sortedParticipants = [...tmpParticipants].sort((p1, p2) => previousRuns[p2].filter(r => r != "-").length - previousRuns[p1].filter(r => r != "-").length);
+			sortedParticipants.forEach(participant => {
+				if(run[participant] && (run[run[participant]] == participant))
+					return;
+					
+				if(tmpParticipants.length <= 1) {
+					var sameGroupMembers = Object.keys(participants).filter(p => p != participant && participants[p] == participants[participant]);
+					run[participant]=sameGroupMembers[Math.floor(Math.random() * sameGroupMembers.length)];
+					
+					tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
+					return;
+				}
+				
+				var possibleGroups = [...groups].filter(group => participants[participant] != group); // don't match in same group
+				var match = matchFor(participant, tmpParticipants, [...possibleGroups]);
+				
+				if (!match) {
+						match = matchFor(participant, Object.keys(participants), [...possibleGroups]);
+					if(!match) {
+						console.log("retry match was null!")
+						return;
+					}
+					
+					tmpParticipants.push(run[match]);
+					run[match] = null;
+				}
+				
+				// set match
+				run[participant] = match;
+				run[match] = participant;
+				
+				// ignore both participants for next matches
+				tmpParticipants.splice(tmpParticipants.indexOf(participant), 1);
+				tmpParticipants.splice(tmpParticipants.indexOf(match), 1);
+			});
+		}
+		
+		if(tmpParticipants.length > 0) {
+			/*console.log(tmpParticipants);
+			console.log(remainingRetries);
+			console.log(run);*/
+			throw "Failed to match all current participants!";
+		}
+		
+		newRuns[newRuns.length] = run;
+		refreshTable();
+	}
+	
+	document.getElementById("calcNextRun").addEventListener('click', e => {
+		var showError = false;
+		for(i = 0; i < 20; i++) {
+			try {
+				calcNextRun();
+				showError = false;
+				break;
+			} catch (error){
+				showError = true;
+				console.log(error);
+			}
+		}
+		if(showError)
+			alert("Es konnte kein Match für jeden Teilnehmer zugeordnet werden. Starte den Prozess ggf. erneut: Falls das Problem weiterhin besteht könnte es sein, dass eine weitere Zuordnung mit den aktuellen Teilnehmern nicht möglich ist.");
+	}, false);
+</script>
+
+<script>
+	<!-- download csv -->
+	
+	function downloadFile(filename, content, fileType){
+		var blob = new Blob([content], {type: fileType});
+		var link = document.createElement("a");
+		link.download = filename;
+		link.innerHTML = "not visible download link";
+		link.href = window.URL.createObjectURL(blob);
+		link.click();
+	}
+	
+	function getListSeparator() {
+		return document.getElementById("listSeperator").value;
+	}
+	
+	function tableToCsv() {
+		var csv = [];
+		var rows = document.querySelectorAll("table tr");
+		
+		var currentVisibility = document.getElementById("showAllRuns").checked;
+		toggleAllColumnsVisible(true);
+		
+		for (var i = 0; i < rows.length; i++) {
+			var row = [], cols = rows[i].querySelectorAll("td, th");
+			
+			for (var j = 0; j < cols.length; j++) 
+				row.push(cols[j].innerText);
+			
+			csv.push(row.join(getListSeparator()));        
+		}
+		
+		toggleAllColumnsVisible(currentVisibility);
+
+		return csv.join("\n");
+	}
+	
+	document.getElementById('downloadCsv').addEventListener('click', e => downloadFile("Durchlaeufe.csv", tableToCsv(), 'text/csv'), false);
+</script>
+
+<script>
+	<!-- saving data -->
+	
+	function joinOldAndNew(){	
+		newRuns.forEach(run => {
+			Object.keys(run).forEach(key => {
+				if(previousRuns[key])
+					previousRuns[key] = previousRuns[key].concat([run[key]]);
+				else
+					previousRuns[key] = [run[key]];
+			});
+		});
+		newRuns = [];
+		
+		// fill runs for not-participants
+		var longestRun = Math.max.apply(null, [...Object.values(previousRuns).map(item => item.length)]);
+		Object.keys(previousRuns).forEach(key => {
+			while(previousRuns[key].length < longestRun)
+				previousRuns[key] = previousRuns[key].concat("-");
+		});
+
+		return previousRuns;
+	}
+	
+	function saveToSelection(){
+		const d = new Date();
+		var filename = "data-" + d.getFullYear() + "_" + (d.getMonth() + 1) + "_" + d.getDate() + "_" + d.getHours() + d.getMinutes() + ".json";
+		
+		var text = JSON.stringify(joinOldAndNew());
+		downloadFile(filename, text, 'application/json');
+	}
+	
+	document.getElementById('saveData').addEventListener('click', e => saveToSelection(), false);
+</script>
+
+</body>
+</html> 
