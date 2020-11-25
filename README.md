@@ -24,7 +24,7 @@ Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist ega
 
 #### JAVA
 - Die Jar per Doppelklick starten. 
-   - Sollte dies nicht funktionieren und stattdessen nichts tun oder die Datei als Ordner öffnen: Windowstaste + X  ->  ```java -jar <Jar-Dateiname>```
+   - Sollte dies nicht funktionieren und stattdessen nichts tun oder die Datei als Ordner öffnen: Shift + Rechtsklick im Ordner  -> Powershell Konsole -> ```java -jar <Jar-Dateiname>```
 - Falls vorhanden eine alte Datei laden (Bei späteren Durchläufe wird automatisch jedes Mal die intern generierte Datei geladen)
 - Teilnehmerliste auswählen im zweiten Datei-Selektor
 - Aktionen im entsprechenden Bereich ausführen
