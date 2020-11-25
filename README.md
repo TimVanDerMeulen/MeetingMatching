@@ -2,6 +2,16 @@
 Es gibt eine Java-Variante und eine HTML-Variante.
 Die Java-Variante ist zuverlässiger, benötigt jedoch eine Java-Installation der Version 11 auf dem PC.
 Die HTML-Version benötigt lediglich einen Browser. Hier gibt es jedoch leider Probleme auf manchen PCs und der Algorithmus selbst ist zufallsbasierter und dadurch zu beginn besser aber letztendlich anfälliger.
+
+## Probleme?
+#### HTML
+Versurch die Java-Version. HTML wird nicht mehr supportet.
+#### JAVA
+Wenn die bat-Datei nicht mehr funktioniert:
+ - überprüfe den Namen der Jar-Datei. Dieser muss 'MeetingMatch-1.0-SNAPSHOT' bzw 'MeetingMatch-1.0-SNAPSHOT.jar' lauten, je nachdem, ob eine Dateiendung mit angezeigt wird oder nicht.
+ - liegt die Jar-Datei direkt neben der bat-Datei?
+ - Shift + Rechsklick im Ordner -> Powershell -> ```.\MeetingMatch.bat``` -> Output lesen und ggf. mir schreiben =)
+
 ## Wie Downloade ich das?
 https://github.com/TimVanDerMeulen/MeetingMatching/releases
 Hier findest du alle Releases des Tools. Es gibt eine Java-Variante und eine HTML-Variante.
@@ -9,7 +19,7 @@ Hier findest du alle Releases des Tools. Es gibt eine Java-Variante und eine HTM
 Unter Assets gewünschtes Format z.B. ZIP-Datei für HTML oder Jar-Datei für Java auswählen und speichern. Du brauchst nur die HTML-Datei behalten. Wo du die abspeicherst ist egal.
 
 ## Wo mache ich die Dateien hin?
-Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist egal. Genauso ist es egal, wo du die Dateien speicherst, die davon generiert werden. Du solltest sie nur wiederfinden. ;)
+Du brauchst nur die HTML- oder Jar-Datei aus dem Download.  Wo du die abspeicherst ist egal. Genauso ist es egal, wo du die Dateien speicherst, die davon generiert werden. Du solltest sie nur wiederfinden. ;)
 
 ## Was mache ich jetzt damit?
 #### HTML
@@ -23,9 +33,9 @@ Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist ega
 - Speichern von Ergebnis CSV und internen Daten für späteren Durchlauf mit Buttons unter Aktionen
 
 #### JAVA
-- Die Jar per Doppelklick starten. 
-   - Sollte dies nicht funktionieren und stattdessen nichts tun oder die Datei als Ordner öffnen: Shift + Rechtsklick im Ordner  -> Powershell Konsole -> ```java -jar <Jar-Dateiname>```
-- Falls vorhanden eine alte Datei laden (Bei späteren Durchläufe wird automatisch jedes Mal die intern generierte Datei geladen)
+- Die Jar per Doppelklick starten oder die bat-Datei verwenden. 
+   - Sollte dies beides nicht funktionieren und stattdessen nichts tun oder die Datei als Ordner öffnen: Shift + Rechtsklick im Ordner  -> Powershell Konsole -> ```java -jar <Jar-Dateiname>```
+- Falls vorhanden eine alte Datei laden (Bei späteren Durchläufen wird automatisch jedes Mal die intern generierte Datei geladen)
 - Teilnehmerliste auswählen im zweiten Datei-Selektor
 - Aktionen im entsprechenden Bereich ausführen
   - zunächst neuen Durchlauf berechnen
