@@ -16,7 +16,9 @@ Wenn die bat-Datei nicht mehr funktioniert:
 https://github.com/TimVanDerMeulen/MeetingMatching/releases
 Hier findest du alle Releases des Tools. Es gibt eine Java-Variante und eine HTML-Variante.
 
-Unter Assets gewünschtes Format z.B. ZIP-Datei für HTML oder Jar-Datei für Java auswählen und speichern. Du brauchst nur die HTML-Datei behalten. Wo du die abspeicherst ist egal.
+Unter Assets gewünschtes Format z.B. ZIP-Datei für HTML oder Jar-Datei für Java auswählen und speichern. 
+Für die HTML-Variante brauchst du nur die HTML-Datei behalten. Wo du die abspeicherst ist egal.
+Wenn du die Java-Variante verwenden möchtest, lohnt es sich ggf. die bat-Datei aus der Zip ebenfalls zu Downloaden/Speichern und neben die Jar-Datei zu legen. Damit kannst du das Programm starten, falls Doppelklick auf der Jar-Datei nicht funktioniert bzw. nicht direkt das Programm sondern etwas anderes (z.B. 'Wähle ein Programm zum öffnen dieser Datei aus' oder ein Ordner geht auf) öffnet. 
 
 ## Wo mache ich die Dateien hin?
 Du brauchst nur die HTML- oder Jar-Datei aus dem Download.  Wo du die abspeicherst ist egal. Genauso ist es egal, wo du die Dateien speicherst, die davon generiert werden. Du solltest sie nur wiederfinden. ;)
