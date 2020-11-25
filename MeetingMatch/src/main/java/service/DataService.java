@@ -4,8 +4,11 @@ import com.google.gson.Gson;
 import data.AttendeeList;
 import data.Config;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
@@ -39,7 +42,11 @@ public class DataService {
 
     public void saveData(Map<String, List<String>> data) {
         try {
-            new PrintWriter(getOldDataFile()).println(jsonMapper.toJson(data));
+            PrintWriter printWriter = new PrintWriter(getOldDataFile());
+            printWriter.println(jsonMapper.toJson(data));
+
+            printWriter.flush();
+            printWriter.close();
         } catch (FileNotFoundException e) {
             ErrorService.error(e, "Fehler beim Speichern der Daten: ");
         }
@@ -73,8 +80,30 @@ public class DataService {
         return attendees;
     }
 
-    public void saveAsCsv(String[] header, String[][] data) {
-        //TODO
+    public void saveAsCsv(String[] header, String[][] rows) throws IOException {
+        JFileChooser jFileChooser = new JFileChooser();
+        jFileChooser.setFileFilter(new FileNameExtensionFilter("CSV", "csv"));
+        jFileChooser.showOpenDialog(null);
+
+        if (jFileChooser.getSelectedFile() == null)
+            throw new IllegalStateException("Canceled!");
+
+        File target = jFileChooser.getSelectedFile();
+        if (!target.getAbsolutePath().endsWith(".csv"))
+            target = new File(target.getAbsolutePath() + ".csv");
+
+        System.out.println("Saving csv to " + target.getAbsolutePath().toString());
+
+        BufferedWriter writer = Files.newBufferedWriter(target.toPath());
+
+        CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT
+                .withHeader(header));
+
+        for (String[] row : rows)
+            csvPrinter.printRecord(row);
+
+        csvPrinter.flush();
+        writer.close();
     }
 
     private File getOldDataFile() {

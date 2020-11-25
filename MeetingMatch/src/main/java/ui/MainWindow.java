@@ -4,6 +4,7 @@ import data.Attendee;
 import data.AttendeeList;
 import data.Config;
 import service.DataService;
+import service.ErrorService;
 import service.MatchService;
 
 import javax.swing.*;
@@ -25,8 +26,8 @@ public class MainWindow extends JFrame {
     private BorderLayout layout;
 
     private Map<String, List<String>> oldData;
-    private Map<String, List<String>> currentData;
     private AttendeeList attendees;
+    private Map<String, List<String>> currentData;
 
     private Border thickPanelBorder = BorderFactory.createLineBorder(Color.black, 3);
 
@@ -203,7 +204,10 @@ public class MainWindow extends JFrame {
                 JOptionPane.showMessageDialog(null, "Keine Teilnehmerliste geladen!");
                 return;
             }
-            matchService.addNextRun(currentData, attendees);//TODO attendees
+            matchService.addNextRun(currentData, attendees);
+            if (!matchService.validateMatches(currentData, attendees)) {
+                JOptionPane.showMessageDialog(null, "Die Validierung für den Durchlauf ist fehlgeschlagen!");
+            }
             refreshTable();
         });
         actionsPanel.add(nextRun, cons);
@@ -213,7 +217,17 @@ public class MainWindow extends JFrame {
         JButton saveAsCsv = new JButton("Speichern und als CSV exportieren");
         saveAsCsv.setToolTipText("Speichert den aktuellen Stand in der internen Datei für vergangene Durchläufe und exportiert als CSV. Der alte Stand wird dabei überschrieben!");
         saveAsCsv.addActionListener(e -> {
-            //TODO
+            try {
+                String[] tableColumnHeader = getTableColumnHeader(currentData);
+                String[][] rows = convertDataToRowFormat(currentData, tableColumnHeader.length);
+
+                dataService.saveAsCsv(tableColumnHeader, rows);
+                dataService.saveData(currentData);
+            } catch (IllegalStateException ex) {
+                // canceled by save as csv
+            } catch (Exception ex) {
+                ErrorService.error(ex, "Fehler beim Speichern: ");
+            }
         });
         actionsPanel.add(saveAsCsv, cons);
 
@@ -298,6 +312,10 @@ public class MainWindow extends JFrame {
         table.setFillsViewportHeight(true);
     }
 
+    private String[] getTableColumnHeader(Map<String, List<String>> data) {
+        return getTableColumnHeader(data.isEmpty() ? 0 : data.values().stream().map(Collection::size).max(Integer::compareTo).get());
+    }
+
     private String[] getTableColumnHeader(int runs) {
         String[] res = new String[runs + 1];
         res[0] = "Name";
@@ -308,7 +326,13 @@ public class MainWindow extends JFrame {
 
     private String[][] convertDataToRowFormat(Map<String, List<String>> data, int columnCount) {
         String[][] res = new String[data.size()][columnCount];
-        List<Map.Entry<String, List<String>>> sortedEntries = data.entrySet().stream().sorted(Comparator.comparingInt(entry -> -entry.getValue().size())).collect(Collectors.toList());
+        List<Map.Entry<String, List<String>>> sortedEntries = new ArrayList<>(data.entrySet());
+
+        if (attendees != null)
+            sortedEntries = sortedEntries.stream().sorted(Comparator.comparing(entry -> attendees.indexOf(attendees.find(entry.getKey())))).collect(Collectors.toList());
+        else
+            sortedEntries = sortedEntries.stream().sorted(Comparator.comparing(entry -> entry.getKey())).collect(Collectors.toList());
+
         int currentRowIndex = 0;
         for (Map.Entry<String, List<String>> entry : sortedEntries) {
             List<String> tmp = new ArrayList<>(entry.getValue());

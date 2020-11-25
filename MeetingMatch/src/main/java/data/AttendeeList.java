@@ -1,10 +1,19 @@
 package data;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class AttendeeList extends ArrayList<Attendee> {
+
+    public AttendeeList() {
+        super();
+    }
+
+    public AttendeeList(Collection<? extends Attendee> c) {
+        super(c);
+    }
 
     public void add(String name, String group) {
         this.add(new Attendee(name, group));

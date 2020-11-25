@@ -9,67 +9,87 @@ import java.util.stream.Collectors;
 public class MatchService {
 
     public void addNextRun(Map<String, List<String>> data, AttendeeList attendees) {
-        Map<String, String> alreadyMatched = new HashMap();
-        Map<String, String> unevenRun = new HashMap();
-        List<String> todo = new ArrayList<>(data.keySet());
+        if (!calcAndApplyNextRunRecurse(data, attendees))
+            ErrorService.error(new RuntimeException("Not possilbe!"), "Es war nicht möglich einen weiteren Durchlauf zu berechnen: ");
+    }
 
-        int retries = attendees.size();
-        while (retries >= 0 && !todo.isEmpty()) {
-            retries--;
-            for (Map.Entry<String, List<String>> entry : data.entrySet()) {
-                if (alreadyMatched.get(entry.getKey()) != null)
-                    continue;
+    public boolean calcAndApplyNextRunRecurse(Map<String, List<String>> data, AttendeeList attendees) {
+        return calcAndApplyNextRunRecurse(new HashMap<>(), data, new AttendeeList(attendees), attendees);
+    }
 
-                Attendee attendee = attendees.find(entry.getKey());
-                List<String> possibleMatches = getPossibleMatches(attendee, attendees, data, alreadyMatched.keySet());
+    private boolean calcAndApplyNextRunRecurse(Map<String, String> currentState, Map<String, List<String>> data, AttendeeList remaining, AttendeeList attendees) {
+        if (remaining.isEmpty()) {
+            apply(currentState, data);
+            return true;
+        }
+        Attendee target = remaining.get(0);
+        if (remaining.size() == 1) {
+            List<String> possibleMatches = getPossibleMatches(target, attendees, data, new ArrayList<>());
+            String match = possibleMatches.get((int) (Math.random() * possibleMatches.size()));
+            String matchMatch = currentState.get(match);
 
-                boolean switchMatch = possibleMatches.isEmpty();
+            currentState.put(target.getName(), match);
 
-                if (switchMatch)
-                    possibleMatches = getPossibleMatches(attendee, attendees, data, new ArrayList<>());
+            Map<String, String> extraRun = new HashMap<>();
+            extraRun.put(target.getName(), matchMatch);
+            extraRun.put(match, target.getName());
+            extraRun.put(matchMatch, target.getName());
 
-                String match = possibleMatches.get((int) (Math.random() * possibleMatches.size()));
+            calcAndApplyNextRunRecurse(currentState, data, new AttendeeList(), attendees);
+            calcAndApplyNextRunRecurse(extraRun, data, new AttendeeList(), attendees);
+            return true;
+        }
 
-                String matchOfMatch = alreadyMatched.get(match);
-                if (todo.size() == 1) {
-                    // last one of uneven amount of attendees
-                    alreadyMatched.put(entry.getKey(), match);
+        List<String> possibleMatches = getPossibleMatches(target, attendees, data, currentState.keySet());
 
-                    unevenRun.put(entry.getKey(), matchOfMatch);
-                    unevenRun.put(match, entry.getKey());
-                    unevenRun.put(matchOfMatch, entry.getKey());
+        Map<String, String> run;
+        AttendeeList runRemainingAttendees;
+        do {
+            System.out.println(target.getName() + ": " + possibleMatches);
+            //System.out.println(new Gson().toJson(currentState));
+            if (possibleMatches.isEmpty())
+                return false;
 
-                    todo.clear();
-                    break;
-                }
-                if (switchMatch) {
-                    String kicked = matchOfMatch;
-                    alreadyMatched.remove(kicked);
-                    todo.add(kicked);
-                }
+            String match = possibleMatches.get(0);
+            Attendee attendee = attendees.find(match);
 
-                alreadyMatched.put(entry.getKey(), match);
-                alreadyMatched.put(match, entry.getKey());
+            run = deepCopy(currentState);
+            runRemainingAttendees = new AttendeeList(remaining);
 
-                todo.remove(entry.getKey());
-                todo.remove(match);
+            run.put(target.getName(), match);
+            run.put(match, target.getName());
+
+            runRemainingAttendees.remove(target);
+            runRemainingAttendees.remove(attendee);
+            possibleMatches.remove(match);
+        } while (!calcAndApplyNextRunRecurse(run, data, runRemainingAttendees, attendees));
+
+        return true;
+    }
+
+    public boolean validateMatches(Map<String, List<String>> data, AttendeeList attendees) {
+        for (String target : data.keySet()) {
+            List<String> matches = data.get(target);
+            for (String match : matches) {
+                if (!data.get(match).contains(target))
+                    return false;
             }
         }
+        return true;
+    }
 
-        if (retries < 0) {
-            ErrorService.error(new RuntimeException("No retries left! Could not calculate next run"), "Fehler während der Berechnung: ");
-            return;
-        }
-
-        // apply next run
-        apply(alreadyMatched, data);
-
-        // apply uneven run if needed
-        if (!unevenRun.isEmpty())
-            apply(unevenRun, data);
+    private <T> Map<String, T> deepCopy(Map<String, T> toCopy) {
+        Map<String, T> res = new HashMap<>();
+        for (Map.Entry<String, T> entry : toCopy.entrySet())
+            res.put(entry.getKey(), entry.getValue() instanceof List ? (T) new ArrayList((Collection) entry.getValue()) : entry.getValue());
+        return res;
     }
 
     private void apply(Map<String, String> matching, Map<String, List<String>> data) {
+        for (String currentKey : matching.keySet())
+            if (data.get(currentKey) == null)
+                data.put(currentKey, new ArrayList<>());
+
         for (String key : data.keySet()) {
             String val = matching.get(key);
             data.get(key).add(val != null ? val : "-");
@@ -78,9 +98,10 @@ public class MatchService {
 
     private List<String> getPossibleMatches(Attendee target, AttendeeList attendees, Map<String, List<String>> data, Collection<String> alreadyMatched) {
         List<String> exclude = new ArrayList<>(alreadyMatched);
-        exclude.addAll(data.get(target.getName()));
+        List<String> old = data.get(target.getName());
+        exclude.addAll(old != null && !old.isEmpty() ? old : new ArrayList<>());
         return attendees.getAllFromOtherGroups(target.getGroup()).stream() // filter same group
-                .map(attendee -> attendee.getName()).filter(s -> !s.equals(target) && !exclude.contains(s)) // filter already matched
+                .map(attendee -> attendee.getName()).filter(s -> !s.equals(target.getName()) && !exclude.contains(s)) // filter already matched
                 .collect(Collectors.toList());
     }
 
