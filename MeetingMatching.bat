@@ -1,0 +1,1 @@
+java -jar MeetingMatch-1.0-SNAPSHOT.jar
