@@ -4,7 +4,7 @@ public class Config {
 
     private String OLD_DATA_FILE_NAME = "oldData.json";
 
-    private final String appName = System.getProperty("app.name");
+    private final String appName = "MeetingMatching";
     private final String userName = System.getProperty("user.name");
     private final String OS = System.getProperty("os.name");
 
@@ -17,20 +17,22 @@ public class Config {
     }
 
     private void init() {
+
         setWorkingDirectoryForOs();
         oldDataFile = workingDirectory + OLD_DATA_FILE_NAME;
     }
 
     private void setWorkingDirectoryForOs() {
+        String basePath;
         // Windows
         if (OS.toUpperCase().contains("WIN")) {
-            workingDirectory = System.getenv("AppData");
+            basePath = System.getenv("AppData");
         }
         //Otherwise, we assume Linux or Mac
         else {
-            String user_home = System.getProperty("user.home");
-            workingDirectory = String.format("%s/%s/", user_home, appName);
+            basePath = System.getProperty("user.home");
         }
+        workingDirectory = String.format("%s/%s/", basePath, appName);
     }
 
     public String getAppName() {
