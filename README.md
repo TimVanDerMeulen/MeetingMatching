@@ -34,4 +34,9 @@ Du brauchst nur die HTML-Datei aus dem Download.  Wo du die abspeicherst ist ega
 	   - speichert internes Format in Applicationsordner ab, um später den aktuellen Stand wiederherstellen zu können (internes Verfahren; benötigt kein Wissen oder sonst was)
 
 ## Wie bekomme ich die bestehenden Daten weg? / Wie fange ich neu an?
+
+#### HTML
 Mit STRG + F5 werden alle default geladenen Daten verworfen und müssen erneut per Datei-Selektor / -Upload ausgewählt werden
+
+#### JAVA
+Einfach die dazugehörige Aktion im 'Aktionen'-bereich in der Applikation ausführen
